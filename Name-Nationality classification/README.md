@@ -3,4 +3,4 @@ for his informative video (https://www.youtube.com/watch?v=WEV61GmmPrk&ab_channe
 initial project. 
 
 Also would like urge beginners in the Sequential data space to look into this blog by Andrej Karpathy about RNN modelling and what
-we should expect from it - https://karpathy.github.io/2015/05/21/rnn-effectivenes
+we should expect from it - https://karpathy.github.io/2015/05/21/rnn-effectiveness
