@@ -13,8 +13,8 @@ class RNN_Model(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super(RNN_Model, self).__init__()
         self.hidden_size = hidden_size
-        self.i2h = nn.Linear(input_size * hidden_size, hidden_siz)
-        self.i2o= nn.Linear(input_size * hidden_size, output_size)
+        self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+        self.i2o= nn.Linear(input_size + hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim =1)
 
     def forward(self, input_tensor, hidden_tensor):
@@ -30,16 +30,19 @@ class RNN_Model(nn.Module):
 
 category_lines, all_categories= load_data()
 n_categories= len(all_categories)
-
+hidden_size= 128
+device= torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+rnn= RNN_Model(N_LETTERS, hidden_size, n_categories).to(device)
 
 criterion= nn.NLLLoss()
-learning_rate= 0.001
-optimizer = torch.optim.Adam(rnn.parameters(),lr= learning_rate)
+learning_rate= 0.01
+optimizer = torch.optim.SGD(rnn.parameters(),lr= learning_rate)
 
 def train(word_tensor, category_tensor):
     hidden= rnn.init_hidden()
     for i in range(word_tensor.size()[0]):
-        output, hidden = rnn(word_tensor[i], hidden)
+        shifted= word_tensor[i].to(device)
+        output, hidden = rnn(shifted, hidden)
 
     loss = criterion(output, category_tensor)
     optimizer.zero_grad()
@@ -64,7 +67,7 @@ for i in range(n_iters):
 
     if (i+1)%print_steps == 0:
         guess = get_class(output)
-        print(f"Actual : {get_class(category_tensor)}, Guess : {get_class(output)}")
+        print(f"Actual : {category}, Guess : {get_class(output)}")
         
 
 
