@@ -32,9 +32,10 @@ def file2img(img_path):
     img= Image.open(f'./data/Flickr8k/Images/{img_path}')
     img= img.resize((299, 299))
     #img= np.expand_dims(img, axis= 0)
-    #img= img/127.5
+    
     trans= transforms.Compose([transforms.ToTensor()])
     img_tensor= trans(img)
+    img_tensor= img_tensor/255.0
     return img_tensor
 
 
@@ -63,7 +64,7 @@ class ImageCaptionDataset(Dataset):
             out_seq= to_categorical([out_seq], num_classes= self.vocab_size)[0]
             inp_combs.append(inp_seq)
             out_corr.append(out_seq)
-        return np.array(inp_combs), np.array(out_corr)   
+        return inp_combs, out_corr   
 
     def __getitem__(self, idx):
         img= self.file_names[idx]
@@ -79,19 +80,45 @@ class ImageCaptionDataset(Dataset):
         features= self.cnn.predict(input_img)
 
         for capt_examp in captions:
-            print(capt_examp)
+        
             tokens= self.tokenizer.texts_to_sequences([capt_examp])[0]
             inp_seq, out_seq= ImageCaptionDataset.seq2seq(self, tokens)
             inp1.append(inp_seq)
             out.append(out_seq)
         
-        print(features.shape)
+        #print(features.shape)
+        #print(len(inp1))
+            #print(inp1[0][0])
         return [features, inp1], out
 
 def create_tokenizer(caption_corpus):
     tokenizer= Tokenizer()
     tokenizer.fit_on_texts(caption_corpus)
     return tokenizer
+
+def get_all_required_data():
+
+    dict_of_capts, captions_df= get_caption('./data/Flickr8k/captions.txt')
+    capt_list= []
+    for file in dict_of_capts:
+        [capt_list.append(cap) for cap in dict_of_capts[file]]
+    tokenizer= create_tokenizer(capt_list)
+    
+    vocab_size= len(tokenizer.word_index) + 1
+    max_len= max(len(d.split()) for d in capt_list)
+    
+    model= Xception(include_top= False, pooling= 'avg')
+    
+
+
+    CaptionDataset= ImageCaptionDataset('./data/Flickr8k/captions.txt', 
+                                        tokenizer, max_len,
+                                        vocab_size, 
+                                        model)
+
+    train_dl= DataLoader(CaptionDataset, batch_size= 1, shuffle= True)
+    return train_dl, max_len, vocab_size 
+
 
 if __name__ == '__main__':
     dict_of_capts, captions_df= get_caption('./data/Flickr8k/captions.txt')
